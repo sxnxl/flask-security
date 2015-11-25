@@ -1,4 +1,4 @@
-Flask-Security-Groups
+Flask-Security
 ==============
 
 .. image:: https://secure.travis-ci.org/mattupstate/flask-security.png?branch=develop
@@ -18,7 +18,7 @@ Flask-Security-Groups
     :target: https://pypi.python.org/pypi/Flask-Security/
     :alt: License
 
-Flask-Security-Groups quickly adds security features to your Flask application.
+Flask-Security quickly adds security features to your Flask application.
 
 Resources
 ---------

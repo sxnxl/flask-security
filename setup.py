@@ -43,7 +43,7 @@ class PyTest(TestCommand):
 
 
 setup(
-    name='Flask-Security-Groups',
+    name='Flask-Security',
     version='1.7.5',
     url='https://github.com/sxnxl/flask-security',
     license='MIT',
