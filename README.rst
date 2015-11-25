@@ -1,4 +1,4 @@
-Flask-Security
+Flask-Security-Groups
 ==============
 
 .. image:: https://secure.travis-ci.org/mattupstate/flask-security.png?branch=develop
