@@ -43,13 +43,13 @@ class PyTest(TestCommand):
 
 
 setup(
-    name='Flask-Security',
+    name='Flask-Security-Groups',
     version='1.7.4',
-    url='https://github.com/mattupstate/flask-security',
+    url='https://github.com/sxnxl/flask-security',
     license='MIT',
-    author='Matt Wright',
-    author_email='matt@nobien.net',
-    description='Simple security for Flask apps',
+    author='Senol Korkmaz',
+    author_email='senol.korkmaz@neu.edu.tr',
+    description='Simple security for Flask apps with role groups',
     long_description=get_long_description(),
     packages=find_packages(),
     zip_safe=False,

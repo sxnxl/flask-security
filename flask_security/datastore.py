@@ -6,6 +6,7 @@
     This module contains an user datastore classes.
 
     :copyright: (c) 2012 by Matt Wright.
+    :copyright: (c) 2015 by Senol Korkmaz.
     :license: MIT, see LICENSE for more details.
 """
 
@@ -61,11 +62,13 @@ class UserDatastore(object):
 
     :param user_model: A user model class definition
     :param role_model: A role model class definition
+    :param group_model: A group model class definition
     """
 
-    def __init__(self, user_model, role_model):
+    def __init__(self, user_model, role_model, group_model):
         self.user_model = user_model
         self.role_model = role_model
+        self.group_model = group_model
 
     def _prepare_role_modify_args(self, user, role):
         if isinstance(user, string_types):
@@ -74,14 +77,30 @@ class UserDatastore(object):
             role = self.find_role(role)
         return user, role
 
+    def _prepare_group_modify_args(self, user, group):
+        if isinstance(user, string_types):
+            user = self.find_user(email=user)
+        if isinstance(group, string_types):
+            group = self.find_group(group)
+        return user, group
+
     def _prepare_create_user_args(self, **kwargs):
         kwargs.setdefault('active', True)
+
         roles = kwargs.get('roles', [])
         for i, role in enumerate(roles):
             rn = role.name if isinstance(role, self.role_model) else role
             # see if the role exists
             roles[i] = self.find_role(rn)
         kwargs['roles'] = roles
+
+        groups = kwargs.get('groups', [])
+        for i, group in enumerate(groups):
+            gn = group.name if isinstance(group, self.group_model) else group
+            # see if the group exists
+            groups[i] = self.find_group(gn)
+        kwargs['groups'] = groups
+
         return kwargs
 
     def get_user(self, id_or_email):
@@ -94,6 +113,10 @@ class UserDatastore(object):
 
     def find_role(self, *args, **kwargs):
         """Returns a role matching the provided name."""
+        raise NotImplementedError
+
+    def find_group(self, *args, **kwargs):
+        """Returns a group matching the provided name."""
         raise NotImplementedError
 
     def add_role_to_user(self, user, role):
@@ -109,6 +132,19 @@ class UserDatastore(object):
             return True
         return False
 
+    def add_user_to_group(self, user, group):
+        """Adds an user to a group.
+
+        :param user: The user to manipulate
+        :param group: The group to add the user to
+        """
+        user, group = self._prepare_group_modify_args(user, group)
+        if group not in user.groups:
+            user.groups.append(group)
+            self.put(user)
+            return True
+        return False
+
     def remove_role_from_user(self, user, role):
         """Removes a role from a user.
 
@@ -120,6 +156,20 @@ class UserDatastore(object):
         if role in user.roles:
             rv = True
             user.roles.remove(role)
+            self.put(user)
+        return rv
+
+    def remove_user_from_group(self, user, group):
+        """Removes an user from a group.
+
+        :param user: The user to manipulate
+        :param group: The group to remove the the user from
+        """
+        rv = False
+        user, group = self._prepare_group_modify_args(user, group)
+        if group in user.groups:
+            rv = True
+            user.groups.remove(group)
             self.put(user)
         return rv
 
@@ -161,6 +211,19 @@ class UserDatastore(object):
         kwargs["name"] = name
         return self.find_role(name) or self.create_role(**kwargs)
 
+    def create_group(self, **kwargs):
+        """Creates and returns a new group from the given parameters."""
+
+        group = self.group_model(**kwargs)
+        return self.put(group)
+
+    def find_or_create_group(self, name, **kwargs):
+        """Returns a group matching the given name or creates it with any
+        additionally provided parameters.
+        """
+        kwargs["name"] = name
+        return self.find_group(name) or self.create_group(**kwargs)
+
     def create_user(self, **kwargs):
         """Creates and returns a new user from the given parameters."""
         kwargs = self._prepare_create_user_args(**kwargs)
@@ -179,9 +242,9 @@ class SQLAlchemyUserDatastore(SQLAlchemyDatastore, UserDatastore):
     """A SQLAlchemy datastore implementation for Flask-Security that assumes the
     use of the Flask-SQLAlchemy extension.
     """
-    def __init__(self, db, user_model, role_model):
+    def __init__(self, db, user_model, role_model, group_model):
         SQLAlchemyDatastore.__init__(self, db)
-        UserDatastore.__init__(self, user_model, role_model)
+        UserDatastore.__init__(self, user_model, role_model, group_model)
 
     def get_user(self, identifier):
         if self._is_numeric(identifier):
@@ -205,14 +268,17 @@ class SQLAlchemyUserDatastore(SQLAlchemyDatastore, UserDatastore):
     def find_role(self, role):
         return self.role_model.query.filter_by(name=role).first()
 
+    def find_group(self, group):
+        return self.group_model.query.filter_by(name=group).first()
+
 
 class MongoEngineUserDatastore(MongoEngineDatastore, UserDatastore):
     """A MongoEngine datastore implementation for Flask-Security that assumes
     the use of the Flask-MongoEngine extension.
     """
-    def __init__(self, db, user_model, role_model):
+    def __init__(self, db, user_model, role_model, group_model):
         MongoEngineDatastore.__init__(self, db)
-        UserDatastore.__init__(self, user_model, role_model)
+        UserDatastore.__init__(self, user_model, role_model, group_model)
 
     def get_user(self, identifier):
         from mongoengine import ValidationError
@@ -244,6 +310,9 @@ class MongoEngineUserDatastore(MongoEngineDatastore, UserDatastore):
     def find_role(self, role):
         return self.role_model.objects(name=role).first()
 
+    def find_group(self, group):
+        return self.group_model.objects(name=group).first()
+
     # TODO: Not sure why this was added but tests pass without it
     # def add_role_to_user(self, user, role):
     #     rv = super(MongoEngineUserDatastore, self).add_role_to_user(user, role)
@@ -260,10 +329,11 @@ class PeeweeUserDatastore(PeeweeDatastore, UserDatastore):
     :param role_model: A role model class definition
     :param role_link: A model implementing the many-to-many user-role relation
     """
-    def __init__(self, db, user_model, role_model, role_link):
+    def __init__(self, db, user_model, role_model, role_link, group_model, group_link):
         PeeweeDatastore.__init__(self, db)
-        UserDatastore.__init__(self, user_model, role_model)
+        UserDatastore.__init__(self, user_model, role_model, group_model)
         self.UserRole = role_link
+        self.UserGroup = group_link
 
     def get_user(self, identifier):
         try:
@@ -290,13 +360,22 @@ class PeeweeUserDatastore(PeeweeDatastore, UserDatastore):
         except self.role_model.DoesNotExist:
             return None
 
+    def find_group(self, group):
+        try:
+            return self.group_model.filter(name=group).get()
+        except self.group_model.DoesNotExist:
+            return None
+
     def create_user(self, **kwargs):
         """Creates and returns a new user from the given parameters."""
         roles = kwargs.pop('roles', [])
+        groups = kwargs.pop('groups', [])
         user = self.user_model(**self._prepare_create_user_args(**kwargs))
         user = self.put(user)
         for role in roles:
             self.add_role_to_user(user, role)
+        for group in groups:
+            self.add_user_to_group(user, group)
         self.put(user)
         return user
 
@@ -327,6 +406,38 @@ class PeeweeUserDatastore(PeeweeDatastore, UserDatastore):
         if result.count():
             query = self.UserRole.delete().where(
                 self.UserRole.user == user, self.UserRole.role == role)
+            query.execute()
+            return True
+        else:
+            return False
+
+    def add_user_to_group(self, user, group):
+        """Adds an user to a group.
+
+        :param user: The user to manipulate
+        :param group: The group to add the user to
+        """
+        user, group = self._prepare_group_modify_args(user, group)
+        result = self.UserGroup.select() \
+            .where(self.UserGroup.user == user.id, self.UserGroup.group == group.id)
+        if result.count():
+            return False
+        else:
+            self.put(self.UserGroup.create(user=user.id, group=group.id))
+            return True
+
+    def remove_user_from_group(self, user, group):
+        """Removes an user from a group.
+
+        :param user: The user to manipulate
+        :param group: The group to remove the user from
+        """
+        user, group = self._prepare_group_modify_args(user, group)
+        result = self.UserGroup.select() \
+            .where(self.UserGroup.user == user, self.UserGroup.group == group)
+        if result.count():
+            query = self.UserGroup.delete().where(
+                self.UserGroup.user == user, self.UserGroup.group == group)
             query.execute()
             return True
         else:

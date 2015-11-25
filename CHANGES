@@ -1,7 +1,15 @@
-Flask-Security Changelog
+Flask-Security-Groups Changelog
 ========================
 
 Here you can see the full list of changes between each Flask-Security release.
+
+Version 1.7.5
+-------------
+
+Released November 25th 2015
+
+- Added role groups
+
 
 Version 1.7.4
 -------------

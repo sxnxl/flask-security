@@ -3,9 +3,10 @@
     flask_security.script
     ~~~~~~~~~~~~~~~~~~~~~
 
-    Flask-Security script module
+    Flask-Security-Groups script module
 
     :copyright: (c) 2012 by Matt Wright.
+    :copyright: (c) 2015 by Senol Korkmaz.
     :license: MIT, see LICENSE for more details.
 """
 from __future__ import print_function
@@ -106,6 +107,69 @@ class RemoveRoleCommand(_RoleCommand):
     def run(self, user_identifier, role_name):
         _datastore.remove_role_from_user(user_identifier, role_name)
         print("Role '%s' removed from user '%s' successfully" % (role_name, user_identifier))
+
+
+class _ToggleActiveCommand(Command):
+    option_list = (
+        Option('-u', '--user', dest='user_identifier'),
+    )
+
+
+class DeactivateUserCommand(_ToggleActiveCommand):
+    """Deactivate a user"""
+
+    @commit
+    def run(self, user_identifier):
+        _datastore.deactivate_user(user_identifier)
+        print("User '%s' has been deactivated" % user_identifier)
+
+
+class ActivateUserCommand(_ToggleActiveCommand):
+    """Activate a user"""
+
+    @commit
+    def run(self, user_identifier):
+        _datastore.activate_user(user_identifier)
+        print("User '%s' has been activated" % user_identifier)
+
+
+class CreateGroupCommand(Command):
+    """Create a group"""
+
+    option_list = (
+        Option('-n', '--name', dest='name', default=None),
+        Option('-d', '--desc', dest='description', default=None),
+    )
+
+    @commit
+    def run(self, **kwargs):
+        _datastore.create_group(**kwargs)
+        print('Group "%(name)s" created successfully.' % kwargs)
+
+
+class _GroupCommand(Command):
+    option_list = (
+        Option('-u', '--user', dest='user_identifier'),
+        Option('-r', '--group', dest='group_name'),
+    )
+
+
+class AddGroupCommand(_GroupCommand):
+    """Add a group to a user"""
+
+    @commit
+    def run(self, user_identifier, group_name):
+        _datastore.add_user_ro_group(user_identifier, group_name)
+        print("User '%s' added to group '%s' successfully" % (user_identifier, group_name))
+
+
+class RemoveGroupCommand(_GroupCommand):
+    """Remove an user from a group"""
+
+    @commit
+    def run(self, user_identifier, group_name):
+        _datastore.remove_group_from_user(user_identifier, group_name)
+        print("User '%s' removed from group '%s' successfully" % (user_identifier, group_name))
 
 
 class _ToggleActiveCommand(Command):

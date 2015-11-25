@@ -18,13 +18,13 @@ Flask-Security
     :target: https://pypi.python.org/pypi/Flask-Security/
     :alt: License
 
-Flask-Security quickly adds security features to your Flask application.
+Flask-Security-Groups quickly adds security features to your Flask application.
 
 Resources
 ---------
 
-- `Documentation <http://packages.python.org/Flask-Security/>`_
+- `Base Documentation <http://packages.python.org/Flask-Security/>`_
 - `Issue Tracker <http://github.com/mattupstate/flask-security/issues>`_
-- `Code <http://github.com/mattupstate/flask-security/>`_
+- `Code <https://github.com/sxnxl/flask-security>`_
 - `Development Version
   <http://github.com/mattupstate/flask-security/zipball/develop#egg=Flask-Security-dev>`_

@@ -1,10 +1,10 @@
-Flask-Security is written and maintained by Matt Wright and
+Flask-Security-Groups is written by Senol Korkmaz and based on Flask-Security by Matt Wright
 various contributors:
 
 Development Lead
 ````````````````
 
-- Matt Wright <matt+github@nobien.net>
+- Senol Korkmaz <senol.korkmaz@neu.edu.tr>
 
 Patches and Suggestions
 ```````````````````````

@@ -3,9 +3,10 @@
     flask_security.core
     ~~~~~~~~~~~~~~~~~~~
 
-    Flask-Security core module
+    Flask-Security-Groups core module
 
     :copyright: (c) 2012 by Matt Wright.
+    :copyright: (c) 2015 by Senol Korkmaz.
     :license: MIT, see LICENSE for more details.
 """
 
@@ -302,6 +303,19 @@ class RoleMixin(object):
         return hash(self.name)
 
 
+class GroupMixin(object):
+    """Mixin for `Group` model definitions"""
+
+    def has_role(self, role):
+        """Returns `True` if the user identifies with the specified role.
+
+        :param role: A role name or `Role` instance"""
+        if isinstance(role, string_types):
+            return role in (role.name for role in self.roles)
+        else:
+            return role in self.roles
+
+
 class UserMixin(BaseUserMixin):
     """Mixin for `User` model definitions"""
 
@@ -314,14 +328,26 @@ class UserMixin(BaseUserMixin):
         data = [str(self.id), md5(self.password)]
         return _security.remember_token_serializer.dumps(data)
 
+    def groups_has_role(self, role):
+        """Returns `True` if the user identifies with the specified role.
+
+        :param role: A role name or `Role` instance"""
+        if self.groups is None:
+            return False
+
+        for group in self.groups:
+            if group.has_role:
+                return True
+        return False
+
     def has_role(self, role):
         """Returns `True` if the user identifies with the specified role.
 
         :param role: A role name or `Role` instance"""
         if isinstance(role, string_types):
-            return role in (role.name for role in self.roles)
+            return role in (role.name for role in self.roles) or self.groups_has_role(role)
         else:
-            return role in self.roles
+            return role in self.roles or self.groups_has_role(role)
 
 
 class AnonymousUser(AnonymousUserMixin):
