@@ -77,6 +77,13 @@ class UserDatastore(object):
             role = self.find_role(role)
         return user, role
 
+    def _prepare_group_role_modify_args(self, group, role):
+        if isinstance(group, string_types):
+            group = self.find_group(group)
+        if isinstance(role, string_types):
+            role = self.find_role(role)
+        return group, role
+
     def _prepare_group_modify_args(self, user, group):
         if isinstance(user, string_types):
             user = self.find_user(email=user)
@@ -129,6 +136,19 @@ class UserDatastore(object):
         if role not in user.roles:
             user.roles.append(role)
             self.put(user)
+            return True
+        return False
+
+    def add_role_to_group(self, group, role):
+        """Adds a role to a user.
+
+        :param group: The group to manipulate
+        :param role: The role to add to the group
+        """
+        group, role = self._prepare_group_role_modify_args(group, role)
+        if role not in group.roles:
+            group.roles.append(role)
+            self.put(group)
             return True
         return False
 
