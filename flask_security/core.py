@@ -336,7 +336,7 @@ class UserMixin(BaseUserMixin):
             return False
 
         for group in self.groups:
-            if group.has_role:
+            if group.has_role(role):
                 return True
         return False
 
